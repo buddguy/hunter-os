@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2104,24 +2105,23 @@ function autoFillSubjects(classes){
 function importBSFintech4(){
   const classes=[
     // MONDAY
-    {name:'Pakistan Studies',day:'Monday',start:'08:45',end:'09:45',room:'AR-02'},
-    {name:'Fintech & Financial Transformation',day:'Monday',start:'10:45',end:'11:45',room:'AB2-04'},
-    {name:'Financial Management',day:'Monday',start:'12:45',end:'13:45',room:'4th Floor-A401'},
+    {name:'Data Structures & Algorithms in Financial Analysis',day:'Monday',start:'08:00',end:'09:20',room:'5th Floor-A506'},
+    {name:'Pakistan Studies',day:'Monday',start:'09:20',end:'10:40',room:'AR-02'},
+    {name:'Fintech & Financial Transformation',day:'Monday',start:'12:00',end:'13:20',room:'AB2-04'},
+    {name:'Financial Management',day:'Monday',start:'14:40',end:'16:00',room:'4th Floor-A401'},
     // TUESDAY
-    {name:'Business Ethics',day:'Tuesday',start:'11:45',end:'12:45',room:'3rd Floor-A302'},
-    {name:'Financial Management',day:'Tuesday',start:'12:45',end:'13:45',room:'3rd Floor-A302'},
+    {name:'Data Structures & Algorithms in Financial Analysis',day:'Tuesday',start:'12:00',end:'13:20',room:'AR-02'},
+    {name:'Business Ethics',day:'Tuesday',start:'13:20',end:'14:40',room:'3rd Floor-A302'},
+    {name:'Financial Management',day:'Tuesday',start:'14:40',end:'16:00',room:'3rd Floor-A302'},
     // WEDNESDAY
-    {name:'Fintech & Financial Transformation',day:'Wednesday',start:'07:45',end:'08:45',room:'5th Floor-A502'},
-    {name:'Pakistan Studies',day:'Wednesday',start:'08:45',end:'09:45',room:'AB2-02'},
-    {name:'Entrepreneurship',day:'Wednesday',start:'12:45',end:'13:45',room:'AB2-03'},
+    {name:'Fintech & Financial Transformation',day:'Wednesday',start:'08:00',end:'09:20',room:'5th Floor-A502'},
+    {name:'Pakistan Studies',day:'Wednesday',start:'09:20',end:'10:40',room:'AB2-02'},
+    {name:'Entrepreneurship',day:'Wednesday',start:'14:40',end:'16:00',room:'AB2-03'},
     // THURSDAY
-    {name:'Data Structures & Algorithms in Financial Analysis',day:'Thursday',start:'09:45',end:'10:45',room:'Lab 3-703'},
-    {name:'Data Structures & Algorithms in Financial Analysis',day:'Thursday',start:'10:45',end:'11:45',room:'Lab 3-703'},
-    {name:'Business Ethics',day:'Thursday',start:'11:45',end:'12:45',room:'5th Floor-A506'},
-    {name:'Entrepreneurship',day:'Thursday',start:'12:45',end:'13:45',room:'3rd Floor-A302'},
-    // FRIDAY
-    {name:'Data Structures & Algorithms in Financial Analysis',day:'Friday',start:'09:45',end:'10:45',room:'AR-02'},
-    {name:'Data Structures & Algorithms in Financial Analysis',day:'Friday',start:'10:45',end:'11:45',room:'AR-02'},
+    {name:'Data Structures & Algorithms in Financial Analysis',day:'Thursday',start:'10:40',end:'12:00',room:'Lab 3-703'},
+    {name:'Data Structures & Algorithms in Financial Analysis',day:'Thursday',start:'12:00',end:'13:20',room:'Lab 3-703'},
+    {name:'Business Ethics',day:'Thursday',start:'13:20',end:'14:40',room:'5th Floor-A506'},
+    {name:'Entrepreneurship',day:'Thursday',start:'14:40',end:'16:00',room:'4th Floor-A402'},
   ];
   data.timetable=classes.map(function(c){
     return {id:Date.now()+Math.random(),name:c.name,day:c.day,start:c.start,end:c.end,room:c.room};
