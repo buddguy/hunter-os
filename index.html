@@ -1496,6 +1496,10 @@ function checkStreak(){
   if(data.player.lastActive===today) return;
   const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
   const lastAward=data.player.lastStreakAwardDate;
+
+  // Award streak FIRST before wiping sections (uses yesterday's section data)
+  checkAndAwardStreak();
+
   // Reset sections for new day
   if(data.player.sectionsTodayDate!==today){
     data.player.sectionsToday={gym:false,uni:false,skills:false};
