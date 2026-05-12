@@ -3101,5 +3101,328 @@ function init(){
 }
 init();
 </script>
+<script>
+    // ============================================================
+// HUNTER OS — AI AGENTS LAYER v1.1
+// Paste this inside a <script> tag just before </body>
+// ============================================================
+
+const AGENTS = {
+  dispatch: {
+    id:'dispatch', name:'DISPATCH', title:'Chief of Staff', icon:'🎯', color:'#00d4ff', glow:'rgba(0,212,255,0.15)',
+    system:`You are Dispatch, Tobache's personal chief of staff inside Hunter OS.
+WHO HE IS: 21yo, Islamabad, FinTech student Air University Sem 4. Subjects: Entrepreneurship, DSA (C++), Financial Management, Pak Studies, FinTech Innovation, Business Ethics. Exam dates: DSA Lab first week June 2026, theory exams second/third week June 2026. Building: AI agency (jewelry client) + Courtly (padel app). Fitness: lean bulk, PPL split, tennis, padel.
+YOUR JOB: 1) Morning briefing — top 3 priorities only 2) Brain dump sorting — sort by domain+urgency 3) Weekly planning 4) Clear decisions when stuck.
+DOMAINS: UNI | FITNESS | AGENCY | COURTLY | MENTAL | MONEY | PERSONAL
+BRAIN DUMP FORMAT: 🎓 UNI | [task] | High/Med/Low
+RULES: Max 3 priorities. Direct. No fluff. Call out procrastination. Short responses.
+Start: "What are we doing today?"`
+  },
+  study: {
+    id:'study', name:'PROF. STACK', title:'Study Agent', icon:'📚', color:'#a78bfa', glow:'rgba(167,139,250,0.15)',
+    system:`You are Prof. Stack, Tobache's university tutor inside Hunter OS.
+CONTEXT: FinTech, Air University Islamabad, Sem 4, Roll 241303. Subjects: Entrepreneurship, DSA (C++), Financial Management, Pak Studies, FinTech Innovation, Business Ethics. Exams: DSA Lab first week June 2026, theory exams second/third week June 2026. Style: mnemonics, Pakistani examples, active recall, pattern recognition. Hates long explanations.
+RULES: DSA = C++ code first always + time complexity. Fin Mgmt = formula → PSX example → numerical. Pak Studies = 25-mark template (intro + 7 points + conclusion), tag Guaranteed/Might/Skip. Ethics = URJVC framework + Pakistani cases. Entrepreneurship = Careem/Airlift/Bykea examples. FinTech = peer-level, Web3 background, Pakistani ecosystem.
+END every topic: "Quiz you on this or move on?"`
+  },
+  coach: {
+    id:'coach', name:'COACH ZERO', title:'Fitness Coach', icon:'🏋️', color:'#22c55e', glow:'rgba(34,197,94,0.15)',
+    system:`You are Coach Zero, Tobache's fitness coach inside Hunter OS.
+CONTEXT: 21yo Islamabad. Goal: lean bulk, ~3kg over 3 months. Split: PPL. Sports: tennis + padel. Wants direct no-fluff coaching.
+YOUR JOB: Analyze workout logs. Progressive overload recs. Lean bulk nutrition feedback. Recovery advice. Hold accountable — call out excuses.
+TARGETS: 200-300kcal surplus. Protein min 2g/kg. Progressive overload every 1-2 weeks. Sleep 7-8hrs.
+TONE: Direct. Specific numbers always. No vague advice.
+Start: "What did you train today?"`
+  },
+  anchor: {
+    id:'anchor', name:'ANCHOR', title:'Mental Clarity', icon:'🧠', color:'#ff6b9d', glow:'rgba(255,107,157,0.15)',
+    system:`You are Anchor, Tobache's thinking partner inside Hunter OS.
+ROLE: Not therapy. Honest grounded voice for clarity when life gets noisy.
+CONTEXT: 21, juggling uni + agency + Courtly + fitness. High ambition, occasionally overwhelmed. Needs directness not softness.
+DO: Daily check-in (energy 1-10, mood 1-10, what's on mind). Pattern spotting. Reframe spirals. Celebrate wins. One sharp journaling question.
+DON'T: Generic "it'll be okay". Project emotions. Push to keep talking. Diagnose.
+TONE: Calm. Direct. Slightly older version of himself. Dry humor ok.
+Start: "Where are you at — energy, mood, what's going on?"`
+  },
+  forge: {
+    id:'forge', name:'THE FORGE', title:'Build Coach', icon:'⚡', color:'#f59e0b', glow:'rgba(245,158,11,0.15)',
+    system:`You are The Forge, Tobache's build coach inside Hunter OS.
+CONTEXT: Building AI agency (jewelry client, Make.com + Claude API + ManyChat + Notion). Building Courtly (padel app, Islamabad, React + Firebase). Hunter OS (this app, buddguy.github.io/hunter-os). Background: Web3, FinTech, builds with AI assistance. Pursuing Claude Certified Architect cert.
+PRIORITIES: 1) Jewelry client workflow 2) Courtly MVP 3) Hunter OS 4) Cert.
+YOUR JOB: Teach Make.com/prompt eng/Claude API/React/Firebase. Pair-build. 30-day roadmaps. Unblock — diagnose bottleneck + next step. Agency strategy.
+STYLE: Show before explain. Real builds not toys. After teaching: "Try yourself or build together?"
+Start: "Agency, Courtly, Hunter OS, or something else?"`
+  }
+};
+
+let agentChat = { active:null, history:{}, open:false };
+function getClaudeKey(){ return window.CLAUDE_API_KEY || localStorage.getItem('hunterOS_claudeKey') || null; }
+function hasKey(){ const k=getClaudeKey(); return k && k.startsWith('sk-ant'); }
+
+function injectAgentButtons(){
+  const homeH=document.querySelector('#screen-home .page-header');
+  if(homeH){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.2)';
+    row.innerHTML=`
+      <button onclick="openAgent('dispatch')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.25);border-radius:10px;color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer">🎯 DISPATCH</button>
+      <button onclick="openAgent('anchor')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;background:rgba(255,107,157,0.07);border:1px solid rgba(255,107,157,0.25);border-radius:10px;color:#ff6b9d;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer">🧠 ANCHOR</button>`;
+    homeH.insertAdjacentElement('afterend',row);
+  }
+  const uniH=document.querySelector('#screen-uni .page-header');
+  if(uniH){ const w=document.createElement('div'); w.style.cssText='padding:10px 16px;border-bottom:1px solid var(--border)'; w.innerHTML=`<button onclick="openAgent('study')" style="width:100%;padding:11px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:10px;color:#a78bfa;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">📚 PROF. STACK — AI Study Agent</button>`; uniH.insertAdjacentElement('afterend',w); }
+  const gymH=document.querySelector('#screen-gym .page-header');
+  if(gymH){ const w=document.createElement('div'); w.style.cssText='padding:10px 16px;border-bottom:1px solid var(--border)'; w.innerHTML=`<button onclick="openAgent('coach')" style="width:100%;padding:11px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;color:var(--green);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🏋️ COACH ZERO — AI Fitness Coach</button>`; gymH.insertAdjacentElement('afterend',w); }
+  const skillsH=document.querySelector('#screen-skills .page-header');
+  if(skillsH){ const w=document.createElement('div'); w.style.cssText='padding:10px 16px;border-bottom:1px solid var(--border)'; w.innerHTML=`<button onclick="openAgent('forge')" style="width:100%;padding:11px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:10px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⚡ THE FORGE — AI Build Coach</button>`; skillsH.insertAdjacentElement('afterend',w); }
+}
+
+function buildAgentUI(){
+  document.head.insertAdjacentHTML('beforeend',`<style>
+    #agentOverlay{position:fixed;inset:0;background:rgba(5,8,16,0.97);z-index:500;display:none;flex-direction:column;font-family:'Exo 2',sans-serif}
+    #agentOverlay.open{display:flex}
+    .amsg-user{align-self:flex-end;background:linear-gradient(135deg,#1a4a8a,#0d3366);border:1px solid rgba(74,144,217,0.4);color:var(--text);border-radius:16px 16px 4px 16px;padding:10px 14px;max-width:84%;font-size:14px;line-height:1.5}
+    .amsg-ai{align-self:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:4px 16px 16px 16px;padding:12px 14px;max-width:92%;font-size:14px;line-height:1.65;color:var(--text);white-space:pre-wrap}
+    .amsg-ai strong,.amsg-ai b{font-weight:700;color:var(--cyan)}
+    .amsg-ai code{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12px;color:var(--gold)}
+    .a-qchip{flex-shrink:0;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .a-qchip:active{border-color:var(--cyan);color:var(--cyan)}
+    #agentMsgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+    #agentMsgs::-webkit-scrollbar{width:3px}#agentMsgs::-webkit-scrollbar-thumb{background:var(--border)}
+    @keyframes aDot{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-5px);opacity:1}}
+    .adt{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;animation:aDot 1.2s infinite}
+  </style>`);
+
+  document.body.insertAdjacentHTML('beforeend',`
+  <div id="agentOverlay">
+    <div style="padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg2);flex-shrink:0">
+      <div id="agentAva" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1px solid var(--border)"></div>
+      <div style="flex:1;min-width:0">
+        <div id="agentHName" style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px"></div>
+        <div id="agentHTitle" style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-top:1px"></div>
+      </div>
+      <button onclick="clearAgentHistory()" style="background:none;border:none;color:var(--text3);font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:1px;cursor:pointer;padding:4px 8px">CLEAR</button>
+      <button onclick="closeAgent()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+    </div>
+    <div id="agentMsgs"></div>
+    <div id="agentTypingWrap" style="display:none;padding:4px 16px 8px;flex-shrink:0">
+      <div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px">
+        <div class="adt" style="animation-delay:0s"></div>
+        <div class="adt" style="animation-delay:0.2s"></div>
+        <div class="adt" style="animation-delay:0.4s"></div>
+      </div>
+    </div>
+    <div id="agentChips" style="padding:6px 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.03)"></div>
+    <div style="padding:10px 16px 20px;background:var(--bg2);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0">
+      <textarea id="agentInp" rows="1" placeholder="Message your agent..." style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;resize:none;outline:none;max-height:100px;line-height:1.4;overflow-y:auto" onkeydown="handleAKey(event)" oninput="resizeAInput(this)"></textarea>
+      <button id="agentSend" onclick="sendAgent()" style="width:42px;height:42px;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:12px;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">➤</button>
+    </div>
+  </div>`);
+}
+
+const AGENT_QA = {
+  dispatch:[["☀️ Today's briefing","Give me my morning briefing — top 3 priorities today?"],["🧠 Brain dump","Brain dumping everything on my plate:"],["📅 Plan week","Help me plan this week"],["🚨 What's urgent?","What's most urgent right now?"]],
+  study:[["📅 What to study?","DSA Lab first week June, theory exams second/third week June — what do I study today?"],["💻 DSA quiz","Quiz me on DSA — linked lists, stacks, queues, BST, sorting"],["⚖️ Ethics cram","Cram mode — Business Ethics URJVC fast, exam soon"],["🇵🇰 Pak Studies","25-mark answer template with example"],["💻 Code practice","C++ coding problem for DSA lab exam"],["💰 Formulas","Drill me on NPV, IRR, WACC"]],
+  coach:[["💪 Log workout","Just finished training. Here's what I did:"],["📊 Review split","Review my PPL split, what to improve?"],["🎯 Weekly targets","Specific targets this week — lifts + calories for lean bulk"],["😴 Missed gym","I missed the gym today"],["🥗 Nutrition","Check if I'm on track for lean bulk"]],
+  anchor:[["☀️ Check-in","Daily check-in"],["😵 Overwhelmed","I'm overwhelmed, too many things at once"],["😶 Can't focus","Can't focus today, everything's scattered"],["📖 Reflect","Reflect on this week — wins and fixes"]],
+  forge:[["💼 Jewelry workflow","Let's work on the jewelry client Make.com automation"],["🎯 Courtly","Next thing to build for Courtly?"],["🎮 Hunter OS","Want to add a new Hunter OS feature"],["📈 Agency pitch","Help me position my AI automation agency"]]
+};
+
+function showNoKeyScreen(id){
+  const a=AGENTS[id];
+  document.getElementById('agentAva').textContent=a.icon;
+  document.getElementById('agentAva').style.cssText+=`;background:${a.glow};border-color:${a.color}`;
+  document.getElementById('agentHName').textContent=a.name;
+  document.getElementById('agentHName').style.color=a.color;
+  document.getElementById('agentHTitle').textContent=a.title;
+  document.getElementById('agentChips').innerHTML='';
+  document.getElementById('agentMsgs').innerHTML=`
+    <div style="display:flex;flex-direction:column;align-items:center;padding:28px 24px;text-align:center;gap:14px">
+      <div style="font-size:44px">🔑</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--gold);letter-spacing:1px">API KEY REQUIRED</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8;max-width:290px">
+        AI agents need <strong style="color:var(--text)">your own Claude API key</strong>.<br>Each person uses their own — your credits stay private.
+      </div>
+      <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:14px 18px;width:100%;max-width:290px;text-align:left">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--cyan);letter-spacing:2px;margin-bottom:10px">HOW TO GET YOUR FREE KEY</div>
+        <div style="font-size:12px;color:var(--text2);line-height:2.1">
+          1️⃣ Go to <strong style="color:var(--cyan)">console.anthropic.com</strong><br>
+          2️⃣ Sign up free — takes 2 min<br>
+          3️⃣ API Keys → Create Key<br>
+          4️⃣ Copy it (starts with sk-ant)<br>
+          5️⃣ Tap the button below and paste it
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);max-width:270px;line-height:1.6">Free tier = ~$5 credit, lasts months at normal use. No subscription.</div>
+      <button onclick="openAgentSettings()" style="width:100%;max-width:270px;padding:14px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(74,144,217,0.1));border:1px solid var(--cyan);border-radius:12px;color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;cursor:pointer">＋ ADD MY API KEY</button>
+    </div>`;
+  document.getElementById('agentOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openAgent(id){
+  const a=AGENTS[id]; if(!a) return;
+  agentChat.active=id; agentChat.open=true;
+  if(!agentChat.history[id]) agentChat.history[id]=[];
+  if(!hasKey()){ showNoKeyScreen(id); return; }
+  document.getElementById('agentAva').textContent=a.icon;
+  document.getElementById('agentAva').style.cssText+=`;background:${a.glow};border-color:${a.color}`;
+  document.getElementById('agentHName').textContent=a.name;
+  document.getElementById('agentHName').style.color=a.color;
+  document.getElementById('agentHTitle').textContent=a.title;
+  document.getElementById('agentChips').innerHTML=(AGENT_QA[id]||[]).map(([l,m])=>`<button class="a-qchip" onclick="sendQuick(${JSON.stringify(m)})">${l}</button>`).join('');
+  renderAMsgs();
+  document.getElementById('agentOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  setTimeout(()=>{ document.getElementById('agentInp').focus(); scrollABottom(); },80);
+}
+
+function closeAgent(){ document.getElementById('agentOverlay').classList.remove('open'); document.body.style.overflow=''; agentChat.open=false; }
+function clearAgentHistory(){ if(!agentChat.active) return; agentChat.history[agentChat.active]=[]; renderAMsgs(); }
+
+function renderAMsgs(){
+  const el=document.getElementById('agentMsgs');
+  const hist=agentChat.history[agentChat.active]||[];
+  if(!hist.length){
+    const a=AGENTS[agentChat.active];
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font-size:52px">${a.icon}</div><div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:${a.color};letter-spacing:2px">${a.name}</div><div style="font-size:12px;color:var(--text3);letter-spacing:1px">${a.title.toUpperCase()}</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Tap a quick action or type to start</div></div>`;
+    return;
+  }
+  el.innerHTML=hist.map(m=>`<div class="${m.role==='user'?'amsg-user':'amsg-ai'}">${fmtMsg(m.content)}</div>`).join('');
+  scrollABottom();
+}
+
+function fmtMsg(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<div style="font-family:\'Rajdhani\',sans-serif;font-weight:700;color:var(--cyan);margin:10px 0 4px;font-size:15px">$1</div>')
+    .replace(/^[-*•]\s+(.+)$/gm,'<div style="display:flex;gap:8px;padding:2px 0"><span style="color:var(--cyan);flex-shrink:0">▸</span><span>$1</span></div>')
+    .replace(/^(\d+)\.\s+(.+)$/gm,'<div style="display:flex;gap:8px;padding:2px 0"><span style="color:var(--gold);font-family:\'Rajdhani\',sans-serif;font-weight:700;flex-shrink:0;min-width:18px">$1.</span><span>$2</span></div>');
+}
+
+function scrollABottom(){ const el=document.getElementById('agentMsgs'); if(el) el.scrollTop=el.scrollHeight; }
+
+async function sendAgent(){
+  const inp=document.getElementById('agentInp');
+  const text=inp.value.trim();
+  if(!text||!agentChat.active) return;
+  if(!hasKey()){ showNoKeyScreen(agentChat.active); return; }
+  const id=agentChat.active, agent=AGENTS[id];
+  agentChat.history[id].push({role:'user',content:text});
+  inp.value=''; inp.style.height='auto';
+  renderAMsgs();
+  document.getElementById('agentTypingWrap').style.display='block';
+  document.getElementById('agentSend').disabled=true;
+  scrollABottom();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getClaudeKey(),'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,system:agent.system,messages:agentChat.history[id].slice(-12)})
+    });
+    const d=await res.json();
+    if(d.error) throw new Error(d.error.message);
+    agentChat.history[id].push({role:'assistant',content:d.content[0].text});
+    // Auto-mark sections for XP
+    const ts=new Date().toDateString();
+    if(!window.data.player.sectionsToday||window.data.player.sectionsTodayDate!==ts){window.data.player.sectionsToday={};window.data.player.sectionsTodayDate=ts;}
+    if(id==='study'){window.data.player.sectionsToday.uni=true;window.save();window.renderStreakBar();}
+    if(id==='coach'){window.data.player.sectionsToday.gym=true;window.save();window.renderStreakBar();}
+    if(id==='forge'){window.data.player.sectionsToday.skills=true;window.save();window.renderStreakBar();}
+  }catch(e){
+    const msg=e.message.includes('credit')||e.message.includes('billing')?'⚠️ API credits empty.\n\nTop up at console.anthropic.com → Billing':e.message.includes('401')||e.message.includes('auth')?'⚠️ API key invalid.\n\nClose this and tap ⚙️ on home screen to update your key.':e.message.includes('model')?'⚠️ Model not found. The model name may have changed — update the code.':e.message.includes('500')||e.message.includes('overloaded')?'⚠️ Claude is overloaded right now. Try again in a moment.':`⚠️ Error: ${e.message}`;
+    agentChat.history[id].push({role:'assistant',content:msg});
+  }finally{
+    document.getElementById('agentTypingWrap').style.display='none';
+    document.getElementById('agentSend').disabled=false;
+    renderAMsgs(); scrollABottom();
+  }
+}
+
+function sendQuick(msg){ document.getElementById('agentInp').value=msg; sendAgent(); }
+function handleAKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAgent();} }
+function resizeAInput(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+
+function buildAgentSettings(){
+  const homeH=document.querySelector('#screen-home .page-header');
+  if(homeH&&!document.getElementById('agentSettingsBtn')){
+    homeH.style.position='relative';
+    const btn=document.createElement('button');
+    btn.id='agentSettingsBtn';
+    btn.innerHTML='⚙️';
+    btn.title='AI Agent Settings';
+    btn.style.cssText='position:absolute;bottom:12px;right:16px;background:none;border:none;font-size:16px;cursor:pointer;opacity:0.5;z-index:10;padding:4px';
+    btn.onclick=openAgentSettings;
+    homeH.appendChild(btn);
+  }
+  if(document.getElementById('agentSettingsMod')) return;
+  document.body.insertAdjacentHTML('beforeend',`
+  <div id="agentSettingsMod" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title" style="color:var(--cyan)">🤖 AI AGENT SETTINGS</div>
+      <div id="keyStatusBanner" style="display:none;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;text-align:center"></div>
+      <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--cyan);letter-spacing:2px;margin-bottom:8px">HOW THIS WORKS</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9">✅ Each person needs <strong style="color:var(--text)">their own API key</strong><br>✅ Saved <strong style="color:var(--text)">only on this device</strong> — never uploaded<br>✅ Friends can't see or use your key<br>✅ You only pay for your own usage</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">GET YOUR FREE KEY</div>
+        <div style="font-size:12px;color:var(--text2);line-height:2.1">1️⃣ <strong style="color:var(--cyan)">console.anthropic.com</strong><br>2️⃣ Sign up free (2 min)<br>3️⃣ API Keys → Create Key<br>4️⃣ Copy it — starts with <code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:3px;color:var(--gold)">sk-ant</code><br>5️⃣ Paste below and save</div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:6px;font-family:'Rajdhani',sans-serif">YOUR CLAUDE API KEY</div>
+      <input id="agentKeyInp" class="modal-input" type="password" placeholder="sk-ant-api03-..." style="font-family:monospace"/>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;line-height:1.6">🔒 Saved to localStorage on this device only — never sent anywhere.</div>
+      <button onclick="saveAgentKey()" class="btn-primary">SAVE &amp; ACTIVATE AGENTS</button>
+      <button id="removeKeyBtn" onclick="removeAgentKey()" class="btn-danger" style="display:none;margin-top:8px">REMOVE KEY FROM THIS DEVICE</button>
+      <button class="btn-secondary" onclick="document.getElementById('agentSettingsMod').classList.remove('open')" style="margin-top:8px">CANCEL</button>
+    </div>
+  </div>`);
+  document.getElementById('agentSettingsMod').onclick=e=>{if(e.target===document.getElementById('agentSettingsMod')) document.getElementById('agentSettingsMod').classList.remove('open');};
+}
+
+function openAgentSettings(){
+  const saved=localStorage.getItem('hunterOS_claudeKey');
+  const banner=document.getElementById('keyStatusBanner');
+  const removeBtn=document.getElementById('removeKeyBtn');
+  if(saved&&saved.startsWith('sk-ant')){
+    banner.style.display='block'; banner.style.background='rgba(34,197,94,0.1)'; banner.style.border='1px solid rgba(34,197,94,0.3)'; banner.style.color='#22c55e';
+    banner.innerHTML='✅ API KEY ACTIVE — Agents are working'; document.getElementById('agentKeyInp').value=saved; removeBtn.style.display='block';
+  } else {
+    banner.style.display='block'; banner.style.background='rgba(245,158,11,0.08)'; banner.style.border='1px solid rgba(245,158,11,0.25)'; banner.style.color='var(--gold)';
+    banner.innerHTML='⚠️ NO KEY — Add yours to activate agents'; removeBtn.style.display='none';
+  }
+  document.getElementById('agentSettingsMod').classList.add('open');
+}
+
+function saveAgentKey(){
+  const key=document.getElementById('agentKeyInp').value.trim();
+  if(!key){window.showToast('Paste your API key first!');return;}
+  if(!key.startsWith('sk-ant')){window.showToast('❌ Invalid — must start with sk-ant-');return;}
+  localStorage.setItem('hunterOS_claudeKey',key); window.CLAUDE_API_KEY=key;
+  const banner=document.getElementById('keyStatusBanner');
+  banner.style.background='rgba(34,197,94,0.1)'; banner.style.border='1px solid rgba(34,197,94,0.3)'; banner.style.color='#22c55e';
+  banner.innerHTML='✅ KEY SAVED — All 5 agents are now active!'; document.getElementById('removeKeyBtn').style.display='block';
+  setTimeout(()=>{ document.getElementById('agentSettingsMod').classList.remove('open'); window.showToast('🤖 Agents activated! Tap any agent button to start.'); },1400);
+}
+
+function removeAgentKey(){
+  localStorage.removeItem('hunterOS_claudeKey'); window.CLAUDE_API_KEY=null;
+  document.getElementById('agentKeyInp').value='';
+  const banner=document.getElementById('keyStatusBanner');
+  banner.innerHTML='🗑️ Key removed from this device'; document.getElementById('removeKeyBtn').style.display='none';
+  window.showToast('Key removed. Agents deactivated on this device.');
+}
+
+function initHunterAgents(){
+  buildAgentUI(); injectAgentButtons(); buildAgentSettings();
+  const saved=localStorage.getItem('hunterOS_claudeKey'); if(saved) window.CLAUDE_API_KEY=saved;
+  console.log('%c🤖 Hunter OS Agents v1.1 — Ready','color:#00d4ff;font-family:monospace;font-weight:bold');
+}
+
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>setTimeout(initHunterAgents,150)); }
+else{ setTimeout(initHunterAgents,150); }
+</script>
 </body>
 </html>
