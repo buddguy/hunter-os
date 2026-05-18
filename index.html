@@ -3424,7 +3424,7 @@ function initHunterAgents(){
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',()=>setTimeout(initHunterAgents,150)); }
 else{ setTimeout(initHunterAgents,150); }
 </script>
-<script>window.data=data;window.AGENTS=AGENTS;window.RANKS=RANKS;window.agentChat=agentChat;</script>
+<script>window.data=data;window.AGENTS=AGENTS;window.RANKS=RANKS;window.agentChat=agentChat;(function(){const f=window.fetch;window.fetch=function(i,o){const u=typeof i==='string'?i:(i&&i.url);if(u&&u.includes('api.anthropic.com')){o=o||{};o.headers=o.headers||{};if(o.headers instanceof Headers){o.headers.set('anthropic-dangerous-direct-browser-access','true');}else{o.headers['anthropic-dangerous-direct-browser-access']='true';}}return f.call(this,i,o);};})();</script>
 <script src="briefing-pipeline.js"></script>
 </body>
 </html>
